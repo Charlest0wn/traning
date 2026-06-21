@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Träning">
+<title>Träningsprogram</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #222;
+  --border: #2c2c2c; --accent: #c8f135; --accent-dim: rgba(200,241,53,0.1);
+  --text: #f0f0f0; --muted: #777;
+  --done-bg: #0f1f00; --done-border: #3a6000; --done-text: #9cd400;
+  --deload-bg: #1a1400; --deload-border: #4a3800; --deload-text: #c8a000;
+}
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; min-height: 100vh; padding-bottom: 60px; }
+button { font-family: inherit; border: none; outline: none; }
+
+/* Header */
+#header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 18px 16px 14px; position: sticky; top: 0; z-index: 100; }
+#header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+#header h1 span { color: var(--accent); }
+.prog-wrap { margin-top: 10px; background: var(--border); border-radius: 4px; height: 5px; overflow: hidden; }
+.prog-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s; width: 0%; }
+.prog-label { margin-top: 5px; font-size: 11px; color: var(--muted); }
+
+/* Tabs */
+.tab-row { display: flex; overflow-x: auto; gap: 6px; padding: 10px 16px; scrollbar-width: none; background: var(--bg); border-bottom: 1px solid var(--border); }
+.tab-row::-webkit-scrollbar { display: none; }
+.tab-btn { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.tab-btn.all-done { border-color: var(--done-border); background: var(--done-bg); color: var(--done-text); }
+.tab-btn.deload { border-color: var(--deload-border); background: var(--deload-bg); color: var(--deload-text); }
+.tab-btn.active.deload { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* Content */
+#content { padding: 12px 16px; }
+.deload-banner { background: var(--deload-bg); border: 1px solid var(--deload-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--deload-text); line-height: 1.5; }
+
+/* Pass cards */
+.pass-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+.pass-card.done { background: var(--done-bg); border-color: var(--done-border); }
+.pass-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; cursor: pointer; user-select: none; }
+.pass-header-left { display: flex; align-items: center; gap: 8px; }
+.pass-badge { background: var(--accent-dim); color: var(--accent); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 7px; letter-spacing: 0.5px; text-transform: uppercase; }
+.pass-card.done .pass-badge { background: rgba(58,96,0,0.4); color: var(--done-text); }
+.pass-title { font-size: 15px; font-weight: 600; }
+.chevron { color: var(--muted); font-size: 18px; transition: transform 0.2s; display: inline-block; }
+.pass-card.open .chevron { transform: rotate(180deg); }
+.pass-body { display: none; padding: 0 16px 14px; }
+.pass-card.open .pass-body { display: block; }
+
+/* Exercises */
+.sec-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; }
+.ex-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
+.ex-row:last-of-type { border-bottom: none; }
+.ex-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ex-name { font-size: 14px; font-weight: 500; flex: 1; }
+.ex-sets { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.purpose-tag { display: inline-block; font-size: 10px; color: var(--muted); background: var(--surface2); border-radius: 5px; padding: 2px 6px; margin-top: 3px; }
+.weight-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.weight-row label { font-size: 12px; color: var(--muted); }
+.weight-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 15px; font-weight: 600; padding: 5px 10px; border-radius: 8px; width: 76px; text-align: center; -webkit-appearance: none; }
+.weight-input:focus { outline: none; border-color: var(--accent); }
+.kg-lbl { font-size: 13px; color: var(--muted); }
+
+/* Notes */
+.notes-label { font-size: 12px; color: var(--muted); display: block; margin: 10px 0 4px; }
+.notes-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; padding: 7px 10px; resize: none; height: 52px; font-family: inherit; }
+.notes-input:focus { outline: none; border-color: var(--accent); }
+
+/* Done button */
+.done-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 2px solid var(--border); background: transparent; color: var(--muted); font-size: 15px; font-weight: 700; cursor: pointer; }
+.pass-card.done .done-btn { border-color: var(--done-border); background: rgba(58,96,0,0.25); color: var(--done-text); }
+
+/* Reset */
+.reset-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 8px 20px; border-radius: 20px; cursor: pointer; display: block; margin: 20px auto 0; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Träning <span>— löpande program</span></h1>
+  <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
+  <div class="prog-label" id="progLabel"></div>
+</div>
+
+<div class="tab-row" id="periodTabs"></div>
+<div class="tab-row" id="weekTabs"></div>
+<div id="content"></div>
+
+<script>
+const PASSES = [
+  { id:"A", label:"Pass A", title:"Underkropp", sections:[
+    { name:"Baslyftar", exercises:[
+      { name:"Knäböj", sets:"4 × 6–8" },
+      { name:"Rumänsk marklyft", sets:"3 × 8–10" },
+      { name:"Benpress", sets:"3 × 10–12" },
+      { name:"Leg curl", sets:"3 × 10–12" },
+      { name:"Stående vadpress", sets:"3 × 12–15" },
+    ]},
+    { name:"Löptillägg", exercises:[
+      { name:"Bulgarian split squat", sets:"3 × 10–12/ben", purpose:"Ensidig benstyrka + höftstabilitet" },
+      { name:"Nordic hamstring curl", sets:"3 × 6–8", purpose:"Excentrisk hamstringsstyrka" },
+    ]},
+  ]},
+  { id:"B", label:"Pass B", title:"Överkropp", sections:[
+    { name:"Baslyftar", exercises:[
+      { name:"Bänkpress", sets:"4 × 6–8" },
+      { name:"Skivstångsrodd", sets:"4 × 8–10" },
+      { name:"Militärpress", sets:"3 × 8–10" },
+      { name:"Latsdrag / chins", sets:"3 × 8–12" },
+      { name:"Triceps pushdown", sets:"3 × 12–15" },
+      { name:"Hammer curls", sets:"3 × 12–15" },
+    ]},
+    { name:"Löptillägg", exercises:[
+      { name:"Plankan m. axelknackning", sets:"3 × 10/sida", purpose:"Rotatorisstabilitet i core" },
+      { name:"Dead bug", sets:"3 × 8–10/sida", purpose:"Core-kontroll" },
+    ]},
+  ]},
+  { id:"C", label:"Pass C", title:"Helkropp / Styrka", sections:[
+    { name:"Baslyftar", exercises:[
+      { name:"Marklyft", sets:"4 × 4–6" },
+      { name:"Frontböj", sets:"3 × 8" },
+      { name:"Incline bänkpress", sets:"3 × 8–10" },
+      { name:"Hantelrodd", sets:"3 × 10" },
+      { name:"Face pulls", sets:"3 × 15" },
+    ]},
+    { name:"Löptillägg", exercises:[
+      { name:"Hip thrust", sets:"3 × 10–12", purpose:"Gluteuskraft = bättre framdrivning" },
+      { name:"Tibialis raises", sets:"3 × 15–20", purpose:"Förebygger shin splints" },
+    ]},
+  ]},
+];
+
+const WEEKS = 6, DELOAD_EVERY = 7, KEY = "styrkelyft_v3";
+
+function isDeload(globalWeek) { return globalWeek % DELOAD_EVERY === 0; }
+
+function emptyPeriod(pid, prev) {
+  return Array.from({length: WEEKS}, (_, i) => {
+    const w = i + 1, gw = (pid-1)*WEEKS + w;
+    const passes = {};
+    PASSES.forEach(p => {
+      const weights = {};
+      p.sections.forEach((sec,si) => sec.exercises.forEach((_,ei) => {
+        const k = si+"_"+ei;
+        weights[k] = prev ? (prev.weeks[WEEKS-1].passes[p.id].weights[k]||"") : "";
+      }));
+      passes[p.id] = { done:false, weights, notes:"" };
+    });
+    return { week:w, gw, deload:isDeload(gw), passes };
+  });
+}
+
+function load() {
+  try { const r = localStorage.getItem(KEY); if(r) return JSON.parse(r); } catch {}
+  return { periods:[{id:1, weeks:emptyPeriod(1,null)}] };
+}
+
+let state = load();
+let activePeriod = 0, activeWeek = 0, openPass = null;
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
+
+function render() {
+  renderPeriodTabs();
+  renderWeekTabs();
+  renderContent();
+  renderProgress();
+}
+
+function renderProgress() {
+  let total = 0, done = 0;
+  state.periods.forEach(p => p.weeks.forEach(w => {
+    PASSES.forEach(pass => { total++; if(w.passes[pass.id].done) done++; });
+  }));
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById("progFill").style.width = pct+"%";
+  document.getElementById("progLabel").textContent = done+" av "+total+" pass genomförda · "+pct+"%";
+}
+
+function renderPeriodTabs() {
+  const el = document.getElementById("periodTabs");
+  el.innerHTML = "";
+  state.periods.forEach((p,i) => {
+    const b = document.createElement("button");
+    b.className = "tab-btn"+(i===activePeriod?" active":"");
+    b.textContent = "Period "+p.id;
+    b.onclick = () => { activePeriod=i; activeWeek=0; openPass=null; render(); };
+    el.appendChild(b);
+  });
+  const add = document.createElement("button");
+  add.className = "tab-btn";
+  add.textContent = "+ Ny period";
+  add.onclick = addPeriod;
+  el.appendChild(add);
+}
+
+function renderWeekTabs() {
+  const el = document.getElementById("weekTabs");
+  el.innerHTML = "";
+  const period = state.periods[activePeriod];
+  period.weeks.forEach((w,i) => {
+    const allDone = PASSES.every(p => w.passes[p.id].done);
+    const b = document.createElement("button");
+    let cls = "tab-btn";
+    if(i===activeWeek) cls += " active";
+    else if(w.deload) cls += " deload";
+    else if(allDone) cls += " all-done";
+    if(i===activeWeek && w.deload) cls += " deload";
+    b.className = cls;
+    b.textContent = w.deload ? "V"+w.week+" ⚡" : "V"+w.week;
+    b.onclick = () => { activeWeek=i; openPass=null; render(); };
+    el.appendChild(b);
+  });
+}
+
+function renderContent() {
+  const el = document.getElementById("content");
+  el.innerHTML = "";
+  const week = state.periods[activePeriod].weeks[activeWeek];
+
+  if(week.deload) {
+    const d = document.createElement("div");
+    d.className = "deload-banner";
+    d.innerHTML = "⚡ <strong>Deload-vecka (v"+week.gw+")</strong> — kör samma övningar på 50–60% av din normala vikt. Fokus på teknik och återhämtning.";
+    el.appendChild(d);
+  }
+
+  PASSES.forEach(pass => {
+    const passData = week.passes[pass.id];
+    const isDone = passData.done;
+    const isOpen = openPass === pass.id;
+
+    const card = document.createElement("div");
+    card.className = "pass-card"+(isDone?" done":"")+(isOpen?" open":"");
+    card.id = "card-"+pass.id;
+
+    // Header
+    const hdr = document.createElement("div");
+    hdr.className = "pass-header";
+    hdr.innerHTML = `<div class="pass-header-left"><span class="pass-badge">${pass.label}</span><span class="pass-title">${pass.title}</span></div><span class="chevron">⌄</span>`;
+    hdr.onclick = () => { openPass = isOpen ? null : pass.id; render(); };
+    card.appendChild(hdr);
+
+    // Body
+    const body = document.createElement("div");
+    body.className = "pass-body";
+
+    pass.sections.forEach((sec,si) => {
+      const sl = document.createElement("div");
+      sl.className = "sec-label";
+      sl.textContent = sec.name;
+      body.appendChild(sl);
+
+      sec.exercises.forEach((ex,ei) => {
+        const wk = si+"_"+ei;
+        const row = document.createElement("div");
+        row.className = "ex-row";
+        row.innerHTML = `
+          <div class="ex-top"><span class="ex-name">${ex.name}</span><span class="ex-sets">${ex.sets}</span></div>
+          ${ex.purpose ? `<span class="purpose-tag">📍 ${ex.purpose}</span>` : ""}
+          <div class="weight-row">
+            <label>Vikt:</label>
+            <input class="weight-input" type="number" inputmode="decimal" placeholder="–" value="${passData.weights[wk]||""}">
+            <span class="kg-lbl">kg</span>
+          </div>`;
+        row.querySelector("input").addEventListener("change", function() {
+          state.periods[activePeriod].weeks[activeWeek].passes[pass.id].weights[wk] = this.value;
+          save();
+        });
+        body.appendChild(row);
+      });
+    });
+
+    // Notes
+    const nl = document.createElement("label");
+    nl.className = "notes-label";
+    nl.textContent = "Anteckningar";
+    body.appendChild(nl);
+    const ta = document.createElement("textarea");
+    ta.className = "notes-input";
+    ta.placeholder = "Hur gick passet?";
+    ta.value = passData.notes || "";
+    ta.addEventListener("change", function() {
+      state.periods[activePeriod].weeks[activeWeek].passes[pass.id].notes = this.value;
+      save();
+    });
+    body.appendChild(ta);
+
+    // Done button
+    const db = document.createElement("button");
+    db.className = "done-btn";
+    db.innerHTML = (isDone ? "✓ Pass genomfört" : "○ Markera som genomfört");
+    db.onclick = () => {
+      state.periods[activePeriod].weeks[activeWeek].passes[pass.id].done = !isDone;
+      save(); render();
+    };
+    body.appendChild(db);
+
+    card.appendChild(body);
+    el.appendChild(card);
+  });
+
+  // Reset
+  const rb = document.createElement("button");
+  rb.className = "reset-btn";
+  rb.textContent = "↺ Återställ allt";
+  rb.onclick = () => {
+    if(!confirm("Återställa allt? All data raderas permanent.")) return;
+    state = { periods:[{id:1, weeks:emptyPeriod(1,null)}] };
+    activePeriod=0; activeWeek=0; openPass=null;
+    save(); render();
+  };
+  el.appendChild(rb);
+}
+
+function addPeriod() {
+  const prev = state.periods[state.periods.length-1];
+  state.periods.push({ id: prev.id+1, weeks: emptyPeriod(prev.id+1, prev) });
+  activePeriod = state.periods.length-1;
+  activeWeek = 0; openPass = null;
+  save(); render();
+}
+
+render();
+</script>
+</body>
+</html>
