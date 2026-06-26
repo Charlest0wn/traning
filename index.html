@@ -103,8 +103,40 @@ input, textarea { font-family: inherit; }
 .done-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 2px solid var(--border); background: transparent; color: var(--muted); font-size: 15px; font-weight: 700; cursor: pointer; }
 .pass-card.done .done-btn { border-color: var(--done-border); background: rgba(58,96,0,0.25); color: var(--done-text); }
 
-/* Reset */
-.reset-btn { border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 8px 20px; border-radius: 20px; display: block; margin: 20px auto 0; }
+/* Date input */
+.date-row { display: flex; align-items: center; gap: 8px; padding: 0 16px 12px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
+.date-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.date-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 500; padding: 5px 10px; border-radius: 8px; flex: 1; -webkit-appearance: none; }
+.date-input:focus { outline: none; border-color: var(--accent); }
+
+/* Add pass button */
+.add-pass-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; border-radius: 14px; border: 2px dashed var(--border); background: transparent; color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+
+/* Menu button & dropdown */
+.menu-btn { position: absolute; right: 14px; top: 18px; color: var(--muted); font-size: 20px; padding: 4px 8px; line-height: 1; letter-spacing: 3px; }
+.dropdown { position: absolute; right: 12px; top: 60px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; min-width: 180px; z-index: 300; box-shadow: 0 8px 24px rgba(0,0,0,0.5); overflow: hidden; display: none; }
+.dropdown.open { display: block; }
+.dropdown-item { display: block; width: 100%; padding: 13px 16px; text-align: left; font-size: 14px; font-weight: 500; color: var(--text); border-bottom: 1px solid var(--border); background: none; }
+.dropdown-item:last-child { border-bottom: none; }
+.dropdown-item.danger { color: var(--red); }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 400; display: none; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 16px 36px; width: 100%; max-width: 480px; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+.modal-section { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+.modal-option { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface2); border-radius: 10px; margin-bottom: 6px; cursor: pointer; border: 1px solid transparent; }
+.modal-option-icon { font-size: 20px; width: 32px; text-align: center; }
+.modal-option-label { font-size: 14px; font-weight: 600; }
+.modal-option-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.modal-cancel { display: block; width: 100%; padding: 13px; border-radius: 12px; border: 1px solid var(--border); color: var(--muted); font-size: 15px; font-weight: 600; text-align: center; margin-top: 10px; cursor: pointer; background: none; }
+
+/* Period filter */
+.period-filter { display: flex; gap: 6px; margin: 10px 0 16px; }
+.pf-btn { flex: 1; padding: 7px 0; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.pf-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
 /* ── Stats page ── */
 #statsPage { padding: 16px; }
@@ -132,8 +164,47 @@ canvas { display: block; width: 100% !important; }
 
 <div id="header">
   <h1>Träning <span>— löpande program</span></h1>
+  <button class="menu-btn" onclick="toggleMenu()">···</button>
+  <div class="dropdown" id="dropdown">
+    <button class="dropdown-item danger" onclick="closeMenu();confirmReset()">↺ Återställ allt</button>
+  </div>
   <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
   <div class="prog-label" id="progLabel"></div>
+</div>
+
+<!-- Add pass modal -->
+<div class="modal-overlay" id="addPassModal" onclick="closeAddPassModal(event)">
+  <div class="modal">
+    <div class="modal-title">Lägg till pass</div>
+    <div class="modal-sub">Välj vad du vill lägga till den här veckan</div>
+    <div class="modal-section">Befintliga övningar</div>
+    <div class="modal-option" onclick="addPassFromProgram('A')">
+      <div class="modal-option-icon">🦵</div>
+      <div><div class="modal-option-label">Underkropp (Pass A)</div><div class="modal-option-sub">Knäböj, RDL, Benpress m.fl.</div></div>
+    </div>
+    <div class="modal-option" onclick="addPassFromProgram('B')">
+      <div class="modal-option-icon">💪</div>
+      <div><div class="modal-option-label">Överkropp (Pass B)</div><div class="modal-option-sub">Bänkpress, Rodd, Press m.fl.</div></div>
+    </div>
+    <div class="modal-option" onclick="addPassFromProgram('C')">
+      <div class="modal-option-icon">🏋️</div>
+      <div><div class="modal-option-label">Helkropp / Styrka (Pass C)</div><div class="modal-option-sub">Marklyft, Frontböj, Bänkpress m.fl.</div></div>
+    </div>
+    <div class="modal-section">Eget upplägg</div>
+    <div class="modal-option" onclick="addPassCustom()">
+      <div class="modal-option-icon">✏️</div>
+      <div><div class="modal-option-label">Eget pass</div><div class="modal-option-sub">Börjar tomt — lägg till egna övningar</div></div>
+    </div>
+    <div class="modal-option" onclick="addPassRunning()">
+      <div class="modal-option-icon">🏃</div>
+      <div><div class="modal-option-label">Löpning</div><div class="modal-option-sub">Distans, tempo och anteckningar</div></div>
+    </div>
+    <div class="modal-option" onclick="addPassKonditionstest()">
+      <div class="modal-option-icon">⏱️</div>
+      <div><div class="modal-option-label">Konditionstest</div><div class="modal-option-sub">5km löpning, 5km skierg, 2km rodd</div></div>
+    </div>
+    <button class="modal-cancel" onclick="closeAddPassModal()">Avbryt</button>
+  </div>
 </div>
 
 <!-- Training page -->
@@ -145,8 +216,16 @@ canvas { display: block; width: 100% !important; }
 
 <!-- Stats page -->
 <div id="statsPage" class="page">
-  <div class="stats-title">Statistik</div>
-  <div class="stats-sub">Bästa set per vecka (högst vikt)</div>
+  <div style="padding:16px 16px 0">
+    <div class="stats-title">Statistik</div>
+    <div class="stats-sub">Bästa set per pass (högst vikt)</div>
+    <div class="period-filter" id="periodFilter">
+      <button class="pf-btn" data-range="7W" onclick="setRange('7W')">Vecka</button>
+      <button class="pf-btn" data-range="1M" onclick="setRange('1M')">Månad</button>
+      <button class="pf-btn" data-range="1Y" onclick="setRange('1Y')">År</button>
+      <button class="pf-btn active" data-range="MAX" onclick="setRange('MAX')">Max</button>
+    </div>
+  </div>
   <div id="statsContent"></div>
 </div>
 
@@ -255,7 +334,35 @@ function load(){
 }
 
 let state=load();
-let activePeriod=0, activeWeek=0, openPass=null, activePage="train";
+let activePeriod=0, activeWeek=0, openPass=null, activePage="train", activeRange="MAX";
+
+function setRange(r){
+  activeRange=r;
+  document.querySelectorAll(".pf-btn").forEach(b=>b.classList.toggle("active", b.dataset.range===r));
+  renderStats();
+}
+
+// Returns cutoff Date (or null for MAX) based on activeRange
+function getRangeCutoff(){
+  if(activeRange==="MAX") return null;
+  const now=new Date();
+  if(activeRange==="7W")  return new Date(now.getFullYear(), now.getMonth(), now.getDate()-7);
+  if(activeRange==="1M")  return new Date(now.getFullYear(), now.getMonth()-1, now.getDate());
+  if(activeRange==="1Y")  return new Date(now.getFullYear()-1, now.getMonth(), now.getDate());
+  return null;
+}
+
+// Get date for a pass in a week — use logged date if available, else null
+function getPassDate(week, passId){
+  const pd=week.passes[passId];
+  if(pd&&pd.date) return new Date(pd.date);
+  return null;
+}
+
+function getExtraPassDate(ep){
+  if(ep.date) return new Date(ep.date);
+  return null;
+}
 
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch{} }
 
@@ -337,13 +444,22 @@ function renderTrainContent(){
 
     const hdr=document.createElement("div");
     hdr.className="pass-header";
-    hdr.innerHTML=`<div class="pass-header-left"><span class="pass-badge">${pass.label}</span><span class="pass-title">${pass.title}</span></div><span class="chevron">⌄</span>`;
+    const dateStr=pd.date?` <span style="font-size:11px;color:var(--muted);font-weight:400">${pd.date}</span>`:"";
+    hdr.innerHTML=`<div class="pass-header-left"><span class="pass-badge">${pass.label}</span><span class="pass-title">${pass.title}${dateStr}</span></div><span class="chevron">⌄</span>`;
     hdr.onclick=()=>{ openPass=isOpen?null:pass.id; render(); };
     card.appendChild(hdr);
 
     if(isOpen){
       const body=document.createElement("div");
       body.className="pass-body";
+
+      // Date row
+      const dr=document.createElement("div"); dr.className="date-row";
+      const dl=document.createElement("span"); dl.className="date-label"; dl.textContent="Datum:";
+      const di=document.createElement("input"); di.className="date-input"; di.type="date";
+      di.value=pd.date||"";
+      di.addEventListener("change",function(){ state.periods[activePeriod].weeks[activeWeek].passes[pass.id].date=this.value; save(); });
+      dr.appendChild(dl); dr.appendChild(di); body.appendChild(dr);
 
       pass.sections.forEach((sec,si)=>{
         const sl=document.createElement("div");
@@ -388,13 +504,92 @@ function renderTrainContent(){
     el.appendChild(card);
   });
 
-  const rb=document.createElement("button"); rb.className="reset-btn"; rb.textContent="↺ Återställ allt";
-  rb.onclick=()=>{
-    if(!confirm("Återställa allt? All data raderas permanent.")) return;
-    state={periods:[{id:1,weeks:emptyPeriod(1,null)}]};
-    activePeriod=0; activeWeek=0; openPass=null; save(); render();
-  };
-  el.appendChild(rb);
+  // Render extra passes
+  const extras=(week.extraPasses||[]);
+  extras.forEach(ep=>{
+    const isOpen=openPass===ep.id, isDone=ep.done;
+    const card=document.createElement("div");
+    card.className="pass-card"+(isDone?" done":"")+(isOpen?" open":"");
+
+    const hdr=document.createElement("div"); hdr.className="pass-header";
+    const left=document.createElement("div"); left.className="pass-header-left";
+    left.innerHTML=`<span class="pass-badge" style="background:rgba(91,156,246,0.15);color:#5b9cf6">${ep.label}</span><span class="pass-title">${ep.title}</span>`;
+    const right=document.createElement("div"); right.style.cssText="display:flex;align-items:center;gap:8px;";
+    const delBtn=document.createElement("button"); delBtn.style.cssText="color:var(--muted);font-size:16px;padding:4px;";
+    delBtn.textContent="✕"; delBtn.onclick=(e)=>{ e.stopPropagation(); if(confirm("Ta bort passet?")) deleteExtraPass(ep.id); };
+    right.appendChild(delBtn);
+    const chev=document.createElement("span"); chev.className="chevron"; chev.textContent="⌄"; right.appendChild(chev);
+    hdr.appendChild(left); hdr.appendChild(right);
+    hdr.onclick=(e)=>{ if(e.target===delBtn) return; openPass=isOpen?null:ep.id; render(); };
+    card.appendChild(hdr);
+
+    if(isOpen){
+      const body=document.createElement("div"); body.className="pass-body";
+
+      // Date row
+      const edr=document.createElement("div"); edr.className="date-row";
+      const edl=document.createElement("span"); edl.className="date-label"; edl.textContent="Datum:";
+      const edi=document.createElement("input"); edi.className="date-input"; edi.type="date";
+      edi.value=ep.date||"";
+      edi.addEventListener("change",function(){
+        const ep2=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===ep.id);
+        if(ep2){ ep2.date=this.value; save(); }
+      });
+      edr.appendChild(edl); edr.appendChild(edi); body.appendChild(edr);
+
+      if(ep.exercises.length>0){
+        const sl=document.createElement("div"); sl.className="sec-label"; sl.textContent="Övningar"; body.appendChild(sl);
+        ep.exercises.forEach((ex,exIdx)=>{
+          body.appendChild(buildExtraExBlock(ep.id, exIdx, ex));
+        });
+      }
+
+      // Konditionstest total time row
+      const isKondPass=ep.exercises.some(e=>e.isKond);
+      if(isKondPass){
+        const totRow=document.createElement("div");
+        totRow.style.cssText="margin:8px 0 4px;padding:10px 12px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:space-between;";
+        const totLbl=document.createElement("span"); totLbl.style.cssText="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;"; totLbl.textContent="Total tid";
+        const totVal=document.createElement("span"); totVal.id="kond-total-"+ep.id; totVal.style.cssText="font-size:16px;font-weight:700;color:var(--accent);";
+        totRow.appendChild(totLbl); totRow.appendChild(totVal); body.appendChild(totRow);
+        setTimeout(()=>renderKondTotal(ep.id),0);
+      }
+
+      const addArea=document.createElement("div"); addArea.className="add-ex-area";
+      const addBtn=document.createElement("button"); addBtn.className="add-ex-btn";
+      addBtn.innerHTML="＋ Lägg till övning";
+      addBtn.onclick=()=>{
+        const week2=state.periods[activePeriod].weeks[activeWeek];
+        const ep2=week2.extraPasses.find(p=>p.id===ep.id);
+        ep2.exercises.push({ progKey:"custom_"+Date.now(), custom:true, name:"", setsLabel:"", purpose:"", sets:[{kg:"",reps:""}] });
+        save(); render();
+      };
+      addArea.appendChild(addBtn); body.appendChild(addArea);
+
+      const nl=document.createElement("label"); nl.className="notes-label"; nl.textContent="Anteckningar"; body.appendChild(nl);
+      const ta=document.createElement("textarea"); ta.className="notes-input"; ta.placeholder="Hur gick passet?";
+      ta.value=ep.notes||"";
+      ta.addEventListener("change",function(){
+        const ep2=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===ep.id);
+        if(ep2) ep2.notes=this.value; save();
+      }); body.appendChild(ta);
+
+      const db=document.createElement("button"); db.className="done-btn";
+      db.innerHTML=(isDone?"✓ Pass genomfört":"○ Markera som genomfört");
+      db.onclick=()=>{
+        const ep2=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===ep.id);
+        if(ep2){ ep2.done=!ep2.done; save(); render(); }
+      }; body.appendChild(db);
+
+      card.appendChild(body);
+    }
+    el.appendChild(card);
+  });
+
+  const apb=document.createElement("button"); apb.className="add-pass-btn";
+  apb.innerHTML="＋ Lägg till pass den här veckan";
+  apb.onclick=()=>openAddPassModal();
+  el.appendChild(apb);
 }
 
 function buildExBlock(passId,exIdx,ex){
@@ -445,6 +640,98 @@ function buildSetRow(passId,exIdx,si,set){
   return row;
 }
 
+function buildExtraExBlock(extraId, exIdx, ex){
+  // Konditionstest: single time-only field, fixed name, no set management
+  if(ex.isKond){
+    const block=document.createElement("div"); block.className="ex-block";
+    const hdr=document.createElement("div"); hdr.className="ex-header";
+    const left=document.createElement("div"); left.className="ex-header-left";
+    const nn=document.createElement("div"); nn.className="ex-name"; nn.textContent=ex.name; left.appendChild(nn);
+    hdr.appendChild(left); block.appendChild(hdr);
+    const sa=document.createElement("div"); sa.className="sets-area";
+    const row=document.createElement("div"); row.className="set-row";
+    const lbl=document.createElement("span"); lbl.className="set-num"; lbl.style.width="auto"; lbl.style.marginRight="6px"; lbl.style.fontSize="12px"; lbl.style.color="var(--muted)"; lbl.textContent="Tid:"; row.appendChild(lbl);
+    const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="90px"; tidIn.type="text"; tidIn.inputMode="numeric";
+    tidIn.placeholder="mm:ss"; tidIn.value=ex.sets[0]?.tid||"";
+    tidIn.addEventListener("change",function(){
+      const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+      if(ep) ep.exercises[exIdx].sets[0].tid=this.value; save(); renderKondTotal(extraId);
+    }); row.appendChild(tidIn);
+    const unit=document.createElement("span"); unit.className="set-sep"; unit.style.fontSize="11px"; unit.textContent="min:sek"; row.appendChild(unit);
+    sa.appendChild(row); block.appendChild(sa);
+    return block;
+  }
+
+  const block=document.createElement("div"); block.className="ex-block";
+  const hdr=document.createElement("div"); hdr.className="ex-header";
+  const left=document.createElement("div"); left.className="ex-header-left";
+  const ni=document.createElement("input"); ni.className="ex-name-input"; ni.type="text";
+  ni.placeholder="Övningsnamn"; ni.value=ex.name;
+  ni.addEventListener("change",function(){
+    const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+    if(ep) ep.exercises[exIdx].name=this.value; save();
+  }); left.appendChild(ni); hdr.appendChild(left);
+  const del=document.createElement("button"); del.className="ex-del-btn"; del.textContent="✕";
+  del.onclick=()=>{
+    const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+    if(ep){ ep.exercises.splice(exIdx,1); save(); render(); }
+  }; hdr.appendChild(del); block.appendChild(hdr);
+  const sa=document.createElement("div"); sa.className="sets-area";
+  const isRun=!!ex.isRunning;
+  ex.sets.forEach((set,si)=>{
+    const row=document.createElement("div"); row.className="set-row";
+    const num=document.createElement("span"); num.className="set-num"; num.textContent=si+1; row.appendChild(num);
+
+    if(isRun){
+      // km field
+      const kmIn=document.createElement("input"); kmIn.className="set-input w"; kmIn.type="number"; kmIn.inputMode="decimal";
+      kmIn.placeholder="km"; kmIn.value=set.km||"";
+      kmIn.addEventListener("change",function(){
+        const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+        if(ep) ep.exercises[exIdx].sets[si].km=this.value; save();
+      }); row.appendChild(kmIn);
+      const sep=document.createElement("span"); sep.className="set-sep"; sep.textContent="·"; row.appendChild(sep);
+      // tid field (text so user can type e.g. "32:15")
+      const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="80px"; tidIn.type="text"; tidIn.inputMode="numeric";
+      tidIn.placeholder="tid"; tidIn.value=set.tid||"";
+      tidIn.addEventListener("change",function(){
+        const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+        if(ep) ep.exercises[exIdx].sets[si].tid=this.value; save();
+      }); row.appendChild(tidIn);
+      const unit=document.createElement("span"); unit.className="set-sep"; unit.style.fontSize="11px"; unit.textContent="min"; row.appendChild(unit);
+    } else {
+      const kgIn=document.createElement("input"); kgIn.className="set-input w"; kgIn.type="number"; kgIn.inputMode="decimal";
+      kgIn.placeholder="kg"; kgIn.value=set.kg||"";
+      kgIn.addEventListener("change",function(){
+        const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+        if(ep) ep.exercises[exIdx].sets[si].kg=this.value; save();
+      }); row.appendChild(kgIn);
+      const sep=document.createElement("span"); sep.className="set-sep"; sep.textContent="×"; row.appendChild(sep);
+      const repIn=document.createElement("input"); repIn.className="set-input r"; repIn.type="number"; repIn.inputMode="numeric";
+      repIn.placeholder="reps"; repIn.value=set.reps||"";
+      repIn.addEventListener("change",function(){
+        const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+        if(ep) ep.exercises[exIdx].sets[si].reps=this.value; save();
+      }); row.appendChild(repIn);
+    }
+
+    const delBtn=document.createElement("button"); delBtn.className="set-del"; delBtn.textContent="✕";
+    delBtn.onclick=()=>{
+      const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+      if(ep&&ep.exercises[exIdx].sets.length>1){ ep.exercises[exIdx].sets.splice(si,1); save(); render(); }
+    }; row.appendChild(delBtn); sa.appendChild(row);
+  });
+  const asb=document.createElement("button"); asb.className="add-set-btn";
+  asb.innerHTML=isRun?"＋ Lägg till intervall":"＋ Set";
+  asb.onclick=()=>{
+    const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+    if(ep){ const sets=ep.exercises[exIdx].sets;
+      sets.push(isRun?{km:"",tid:""}:{kg:sets.length>0?sets[sets.length-1].kg:"",reps:""});
+      save(); render(); }
+  }; sa.appendChild(asb); block.appendChild(sa);
+  return block;
+}
+
 function addSet(passId,exIdx){
   const ex=state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises[exIdx];
   const lastKg=ex.sets.length>0?ex.sets[ex.sets.length-1].kg:"";
@@ -475,17 +762,24 @@ function epley1RM(kg,reps){ if(!kg||!reps||reps<=0) return 0; if(reps===1) retur
 
 // Extract best set per week: highest kg and best estimated 1RM
 function getSeriesData(tracked){
-  const points=[];
+  const points=[], cutoff=getRangeCutoff();
   state.periods.forEach(period=>{
     period.weeks.forEach(week=>{
-      if(week.deload) return; // skip deload weeks
+      if(week.deload) return;
       const passData=week.passes[tracked.passId];
       if(!passData) return;
+      // Date filter: if cutoff set, only include if pass has date and it's within range
+      if(cutoff){
+        const d=getPassDate(week, tracked.passId);
+        if(!d||d<cutoff) return;
+      }
       const ex=passData.exercises.find(e=>e.name===tracked.name&&!e.custom);
       if(!ex) return;
       let maxKg=0, best1RM=0;
       ex.sets.forEach(s=>{ const kg=parseFloat(s.kg)||0, reps=parseFloat(s.reps)||0; if(kg>maxKg) maxKg=kg; const est=epley1RM(kg,reps); if(est>best1RM) best1RM=est; });
-      if(maxKg>0) points.push({ label:"P"+period.id+"V"+week.week, kg:maxKg, est1rm:best1RM, gw:(period.id-1)*WEEKS+week.week });
+      const passDate=getPassDate(week, tracked.passId);
+      const lbl=passDate ? passDate.toLocaleDateString("sv-SE",{month:"short",day:"numeric"}) : "P"+period.id+"V"+week.week;
+      if(maxKg>0) points.push({ label:lbl, kg:maxKg, est1rm:best1RM, gw:(period.id-1)*WEEKS+week.week });
     });
   });
   return points;
@@ -512,7 +806,7 @@ function renderStats(){
 
     if(data.length===0){
       const nd=document.createElement("div"); nd.className="no-data";
-      nd.textContent="Ingen data loggad ännu"; card.appendChild(nd);
+      nd.textContent=activeRange==="MAX"?"Ingen data loggad ännu":"Inga pass med datum inom vald period"; card.appendChild(nd);
       el.appendChild(card); return;
     }
 
@@ -551,6 +845,349 @@ function renderStats(){
 
     // Draw chart after DOM insertion
     setTimeout(()=>drawChart(canvas,data,tracked.color),0);
+  });
+
+  // Running stats card
+  renderRunningStats(el);
+
+  // Konditionstest stats card
+  renderKondStats(el);
+}
+
+// ── Running stats ────────────────────────────────────────────────────────────
+// Riegel formula: t2 = t1 * (d2/d1)^1.06 — predicts time for a new distance
+function riegelPredict(km, minTotal, targetKm){
+  if(!km||!minTotal||km<=0) return null;
+  return minTotal * Math.pow(targetKm/km, 1.06);
+}
+
+// Parse time string "32:15" or "32.25" or "32" -> decimal minutes
+function parseTime(str){
+  if(!str) return null;
+  str = str.toString().trim();
+  if(str.includes(":")){
+    const parts=str.split(":");
+    return parseFloat(parts[0])+(parseFloat(parts[1]||0)/60);
+  }
+  return parseFloat(str)||null;
+}
+
+function formatTime(mins){
+  if(!mins||mins<=0) return "–";
+  const m=Math.floor(mins), s=Math.round((mins-m)*60);
+  return m+":"+(s<10?"0"+s:s);
+}
+
+// Extract running data: best estimated 10km time per week (lowest = fastest)
+function getRunningData(){
+  const points=[], cutoff=getRangeCutoff();
+  state.periods.forEach(period=>{
+    period.weeks.forEach(week=>{
+      if(week.deload) return;
+      let best10k=null, bestPace=null, bestDate=null;
+      (week.extraPasses||[]).forEach(ep=>{
+        if(!ep.isRunning) return;
+        if(cutoff){
+          const d=getExtraPassDate(ep);
+          if(!d||d<cutoff) return;
+        }
+        const epDate=getExtraPassDate(ep);
+        ep.exercises.forEach(ex=>{
+          if(!ex.isRunning) return;
+          ex.sets.forEach(set=>{
+            const km=parseFloat(set.km)||0;
+            const mins=parseTime(set.tid);
+            if(!km||!mins) return;
+            const pace=mins/km;
+            const est10k=riegelPredict(km, mins, 10);
+            if(est10k && (!best10k || est10k<best10k)){
+              best10k=est10k; bestPace=pace; bestDate=epDate;
+            }
+          });
+        });
+      });
+      if(best10k){
+        const lbl=bestDate ? bestDate.toLocaleDateString("sv-SE",{month:"short",day:"numeric"}) : "P"+period.id+"V"+week.week;
+        points.push({ label:lbl, pace:bestPace, est10k:Math.round(best10k*100)/100, gw:(period.id-1)*WEEKS+week.week });
+      }
+    });
+  });
+  return points;
+}
+
+function renderRunningStats(el){
+  const data=getRunningData();
+  const card=document.createElement("div"); card.className="stat-card";
+
+  // Header
+  const hdr=document.createElement("div"); hdr.className="stat-card-header";
+  const title=document.createElement("div"); title.className="stat-card-title"; title.textContent="🏃 Löpning";
+  hdr.appendChild(title);
+  if(data.length>0){
+    const best=Math.min(...data.map(d=>d.est10k));
+    const pr=document.createElement("div"); pr.className="stat-card-pr";
+    pr.textContent="Bästa 10k: "+formatTime(best); hdr.appendChild(pr);
+  }
+  card.appendChild(hdr);
+
+  if(data.length===0){
+    const nd=document.createElement("div"); nd.className="no-data";
+    nd.textContent=activeRange==="MAX"?"Inga löppass loggade ännu":"Inga löppass med datum inom vald period"; card.appendChild(nd);
+    el.appendChild(card); return;
+  }
+
+  // KPIs
+  const kpiRow=document.createElement("div"); kpiRow.className="stats-kpi-row";
+  const best10k=Math.min(...data.map(d=>d.est10k));
+  const last10k=data[data.length-1].est10k;
+  const lastPace=data[data.length-1].pace;
+  const delta=last10k - data[0].est10k; // negative = improvement
+
+  [
+    {label:"Senaste 10k",val:formatTime(last10k),unit:"",delta:null,sub:"Riegel-est."},
+    {label:"Bästa 10k",val:formatTime(best10k),unit:"",delta:null,sub:"Riegel-est."},
+    {label:"Senaste pace",val:formatTime(lastPace),unit:"/km",delta:null,sub:null},
+    {label:"Förändring",val:(delta<=0?"-":"+")+formatTime(Math.abs(delta)),unit:"",delta:-delta,sub:null},
+  ].forEach(kpi=>{
+    const box=document.createElement("div"); box.className="kpi-box";
+    box.innerHTML=`<div class="kpi-label">${kpi.label}</div><div class="kpi-val">${kpi.val}<span class="kpi-unit">${kpi.unit}</span></div>`;
+    if(kpi.sub){ const s=document.createElement("div"); s.className="kpi-delta neu"; s.textContent=kpi.sub; box.appendChild(s); }
+    if(kpi.delta!==null){
+      const dEl=document.createElement("div");
+      // For running, improvement = lower time = delta positive (we flipped sign above)
+      dEl.className="kpi-delta "+(kpi.delta>0?"pos":kpi.delta<0?"neg":"neu");
+      dEl.textContent=kpi.delta>0?"▲ Förbättring":kpi.delta<0?"▼ Försämring":"— Oförändrat";
+      box.appendChild(dEl);
+    }
+    kpiRow.appendChild(box);
+  });
+  card.appendChild(kpiRow);
+
+  // Chart — plot estimated 10k time (lower = better)
+  const wrap=document.createElement("div"); wrap.className="chart-wrap";
+  const canvas=document.createElement("canvas"); canvas.height=160;
+  wrap.appendChild(canvas); card.appendChild(wrap);
+  el.appendChild(card);
+
+  setTimeout(()=>drawRunChart(canvas, data), 0);
+}
+
+// ── Konditionstest stats ──────────────────────────────────────────────────────
+function getKondData(){
+  const points=[], cutoff=getRangeCutoff();
+  state.periods.forEach(period=>{
+    period.weeks.forEach(week=>{
+      if(week.deload) return;
+      (week.extraPasses||[]).forEach(ep=>{
+        if(!ep.exercises.some(e=>e.isKond)) return;
+        if(cutoff){
+          const d=getExtraPassDate(ep);
+          if(!d||d<cutoff) return;
+        }
+        // Sum up all kond exercise times
+        let total=0, allSet=true;
+        const splits={};
+        ep.exercises.filter(e=>e.isKond).forEach(ex=>{
+          const sec=parseTimeToSec(ex.sets[0]?.tid);
+          if(sec){ total+=sec; splits[ex.name]=sec; } else allSet=false;
+        });
+        if(total>0){
+          const d=getExtraPassDate(ep);
+          const lbl=d?d.toLocaleDateString("sv-SE",{month:"short",day:"numeric"}):"Test";
+          points.push({ label:lbl, total, allSet, splits, date:d });
+        }
+      });
+    });
+  });
+  // Sort by date if available
+  points.sort((a,b)=>{ if(a.date&&b.date) return a.date-b.date; return 0; });
+  return points;
+}
+
+function renderKondStats(el){
+  const data=getKondData();
+  const card=document.createElement("div"); card.className="stat-card";
+
+  // Header
+  const hdr=document.createElement("div"); hdr.className="stat-card-header";
+  const title=document.createElement("div"); title.className="stat-card-title"; title.textContent="⏱️ Konditionstest";
+  hdr.appendChild(title);
+  if(data.length>0){
+    const best=Math.min(...data.filter(d=>d.allSet).map(d=>d.total));
+    if(best<Infinity){
+      const pr=document.createElement("div"); pr.className="stat-card-pr";
+      pr.textContent="PR: "+formatSec(best); hdr.appendChild(pr);
+    }
+  }
+  card.appendChild(hdr);
+
+  if(data.length===0){
+    const nd=document.createElement("div"); nd.className="no-data";
+    nd.textContent=activeRange==="MAX"?"Inga konditionstest loggade ännu":"Inga konditionstest inom vald period";
+    card.appendChild(nd); el.appendChild(card); return;
+  }
+
+  // KPI row
+  const kpiRow=document.createElement("div"); kpiRow.className="stats-kpi-row";
+  const completedData=data.filter(d=>d.allSet);
+  const lastTotal=data[data.length-1].total;
+  const bestTotal=completedData.length>0?Math.min(...completedData.map(d=>d.total)):lastTotal;
+  const delta=data.length>1?lastTotal-data[0].total:0;
+
+  [
+    {label:"Senaste",    val:formatSec(lastTotal),   sub:data[data.length-1].allSet?null:"Ej komplett"},
+    {label:"Bästa",      val:formatSec(bestTotal),   sub:null},
+    {label:"Antal test", val:data.length,             sub:null},
+    {label:"Förändring", val:(delta<=0?"-":"+")+formatSec(Math.abs(delta)), delta:-delta, sub:null},
+  ].forEach(kpi=>{
+    const box=document.createElement("div"); box.className="kpi-box";
+    box.innerHTML=`<div class="kpi-label">${kpi.label}</div><div class="kpi-val">${kpi.val}</div>`;
+    if(kpi.sub){ const s=document.createElement("div"); s.className="kpi-delta neg"; s.textContent=kpi.sub; box.appendChild(s); }
+    if(kpi.delta!=null){
+      const dEl=document.createElement("div");
+      dEl.className="kpi-delta "+(kpi.delta>0?"pos":kpi.delta<0?"neg":"neu");
+      dEl.textContent=kpi.delta>0?"▲ Förbättring":kpi.delta<0?"▼ Försämring":"— Oförändrat";
+      box.appendChild(dEl);
+    }
+    kpiRow.appendChild(box);
+  });
+  card.appendChild(kpiRow);
+
+  // Split breakdown for latest test
+  const latest=data[data.length-1];
+  if(Object.keys(latest.splits).length>0){
+    const splitWrap=document.createElement("div");
+    splitWrap.style.cssText="padding:0 16px 14px;";
+    const splitLbl=document.createElement("div");
+    splitLbl.style.cssText="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;";
+    splitLbl.textContent="Senaste splits"; splitWrap.appendChild(splitLbl);
+    const splitGrid=document.createElement("div");
+    splitGrid.style.cssText="display:flex;flex-direction:column;gap:5px;";
+    Object.entries(latest.splits).forEach(([name,sec])=>{
+      const row=document.createElement("div");
+      row.style.cssText="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:8px;padding:8px 12px;";
+      const n=document.createElement("span"); n.style.cssText="font-size:13px;color:var(--muted);"; n.textContent=name;
+      const t=document.createElement("span"); t.style.cssText="font-size:14px;font-weight:700;"; t.textContent=formatSec(sec);
+      row.appendChild(n); row.appendChild(t); splitGrid.appendChild(row);
+    });
+    splitWrap.appendChild(splitGrid); card.appendChild(splitWrap);
+  }
+
+  // Chart — total time over tests (lower = better)
+  if(data.length>1){
+    const wrap=document.createElement("div"); wrap.className="chart-wrap";
+    const canvas=document.createElement("canvas"); canvas.height=160;
+    wrap.appendChild(canvas); card.appendChild(wrap);
+    setTimeout(()=>drawKondChart(canvas,data),0);
+  }
+
+  el.appendChild(card);
+}
+
+function drawKondChart(canvas, data){
+  const dpr=window.devicePixelRatio||1;
+  const w=canvas.parentElement.clientWidth-24, h=160;
+  canvas.width=w*dpr; canvas.height=h*dpr;
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  const ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
+  const color="#f6955b";
+  const pad={t:16,r:16,b:32,l:52};
+  const cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
+  const vals=data.map(d=>d.total);
+  const minV=Math.max(0,Math.min(...vals)-60), maxV=Math.max(...vals)+60;
+  const xScale=i=>(i/(data.length-1||1))*cw+pad.l;
+  const yScale=v=>pad.t+ch-(v-minV)/(maxV-minV)*ch;
+
+  // Grid
+  ctx.strokeStyle="#2c2c2c"; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const v=minV+(maxV-minV)*i/4, y=yScale(v);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke();
+    ctx.fillStyle="#777"; ctx.font="10px -apple-system,sans-serif"; ctx.textAlign="right";
+    ctx.fillText(formatSec(Math.round(v)), pad.l-4, y+3);
+  }
+  // X labels
+  ctx.fillStyle="#777"; ctx.font="10px -apple-system,sans-serif"; ctx.textAlign="center";
+  data.forEach((d,i)=>{ if(data.length>8&&i%2!==0) return; ctx.fillText(d.label,xScale(i),h-pad.b+14); });
+
+  // Area
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+  grad.addColorStop(0,color+"55"); grad.addColorStop(1,color+"00");
+  ctx.beginPath();
+  data.forEach((d,i)=>{ const x=xScale(i),y=yScale(d.total); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.lineTo(xScale(data.length-1),pad.t+ch); ctx.lineTo(xScale(0),pad.t+ch);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.lineJoin="round";
+  data.forEach((d,i)=>{ const x=xScale(i),y=yScale(d.total); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.stroke();
+
+  // Dots
+  const bestVal=Math.min(...vals);
+  data.forEach((d,i)=>{
+    const x=xScale(i), y=yScale(d.total), isPR=d.total===bestVal&&d.allSet;
+    ctx.beginPath(); ctx.arc(x,y,isPR?5:3.5,0,Math.PI*2);
+    ctx.fillStyle=isPR?"#fff":color; ctx.fill();
+    if(isPR){ ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke(); }
+    if(isPR||data.length<=6){
+      ctx.fillStyle="#fff"; ctx.font="bold 10px -apple-system,sans-serif"; ctx.textAlign="center";
+      ctx.fillText(formatSec(d.total), x, y-9);
+    }
+  });
+}
+
+function drawRunChart(canvas, data){
+  const dpr=window.devicePixelRatio||1;
+  const w=canvas.parentElement.clientWidth-24, h=160;
+  canvas.width=w*dpr; canvas.height=h*dpr;
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  const ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
+  const color="#5b9cf6";
+  const pad={t:16,r:16,b:32,l:48};
+  const cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
+  const vals=data.map(d=>d.est10k);
+  // Invert: lower time = better = higher on chart
+  const minV=Math.max(0,Math.min(...vals)-2), maxV=Math.max(...vals)+2;
+  const xScale=i=>(i/(data.length-1||1))*cw+pad.l;
+  const yScale=v=>pad.t+ch-(v-minV)/(maxV-minV)*ch; // lower time = higher on chart... wait, we want lower=better=top
+
+  // Grid
+  ctx.strokeStyle="#2c2c2c"; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const v=minV+(maxV-minV)*i/4, y=yScale(v);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke();
+    ctx.fillStyle="#777"; ctx.font="10px -apple-system,sans-serif"; ctx.textAlign="right";
+    ctx.fillText(formatTime(v), pad.l-4, y+3);
+  }
+  // X labels
+  ctx.fillStyle="#777"; ctx.font="10px -apple-system,sans-serif"; ctx.textAlign="center";
+  data.forEach((d,i)=>{ if(data.length>8&&i%2!==0) return; ctx.fillText(d.label,xScale(i),h-pad.b+14); });
+
+  // Area
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+  grad.addColorStop(0,color+"55"); grad.addColorStop(1,color+"00");
+  ctx.beginPath();
+  data.forEach((d,i)=>{ const x=xScale(i),y=yScale(d.est10k); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.lineTo(xScale(data.length-1),pad.t+ch); ctx.lineTo(xScale(0),pad.t+ch);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.lineJoin="round";
+  data.forEach((d,i)=>{ const x=xScale(i),y=yScale(d.est10k); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.stroke();
+
+  // Dots — best time = PR (lowest value)
+  const bestVal=Math.min(...vals);
+  data.forEach((d,i)=>{
+    const x=xScale(i), y=yScale(d.est10k), isPR=d.est10k===bestVal;
+    ctx.beginPath(); ctx.arc(x,y,isPR?5:3.5,0,Math.PI*2);
+    ctx.fillStyle=isPR?"#fff":color; ctx.fill();
+    if(isPR){ ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke(); }
+    if(isPR||data.length<=6){
+      ctx.fillStyle="#fff"; ctx.font="bold 10px -apple-system,sans-serif"; ctx.textAlign="center";
+      ctx.fillText(formatTime(d.est10k), x, y-9);
+    }
   });
 }
 
@@ -620,6 +1257,104 @@ function drawChart(canvas, data, color){
       ctx.fillText(d.kg+"kg", x, y-9);
     }
   });
+}
+
+// ── Menu ─────────────────────────────────────────────────────────────────────
+function toggleMenu(){
+  document.getElementById("dropdown").classList.toggle("open");
+}
+function closeMenu(){
+  document.getElementById("dropdown").classList.remove("open");
+}
+document.addEventListener("click", e=>{
+  const dd=document.getElementById("dropdown");
+  if(!dd.contains(e.target) && !e.target.classList.contains("menu-btn")) closeMenu();
+});
+function confirmReset(){
+  if(!confirm("Återställa allt? All data raderas permanent.")) return;
+  state={periods:[{id:1,weeks:emptyPeriod(1,null)}]};
+  activePeriod=0; activeWeek=0; openPass=null; save(); render();
+}
+
+// ── Add-pass modal ────────────────────────────────────────────────────────────
+function openAddPassModal(){ document.getElementById("addPassModal").classList.add("open"); }
+function closeAddPassModal(e){ if(!e||e.target===document.getElementById("addPassModal")) document.getElementById("addPassModal").classList.remove("open"); }
+
+// All exercises from a program pass flattened into custom-style exercise objects
+function exercisesFromProgram(passId){
+  const pass=PROGRAM.find(p=>p.id===passId);
+  const exs=[];
+  pass.sections.forEach((sec,si)=>{
+    sec.exercises.forEach((ex,ei)=>{
+      exs.push({ progKey:"extra_"+passId+"_"+si+"_"+ei+"_"+Date.now(), custom:false,
+        name:ex.name, setsLabel:ex.sets+"× "+ex.repsLabel, purpose:ex.purpose||"",
+        sets:Array.from({length:ex.sets},()=>({kg:"",reps:""})) });
+    });
+  });
+  return exs;
+}
+
+function addExtraPass(title, label, exercises, isRunning){
+  const week=state.periods[activePeriod].weeks[activeWeek];
+  if(!week.extraPasses) week.extraPasses=[];
+  week.extraPasses.push({ id:"extra_"+Date.now(), label, title, done:false, notes:"", isRunning:!!isRunning, exercises });
+  save(); render(); closeAddPassModal();
+}
+
+function addPassFromProgram(passId){
+  const pass=PROGRAM.find(p=>p.id===passId);
+  addExtraPass(pass.title, "Extra "+pass.label, exercisesFromProgram(passId), false);
+}
+function addPassCustom(){ addExtraPass("Eget pass","Extra pass",[], false); }
+// Parse "mm:ss" or "mm.ss" or decimal minutes -> total seconds
+function parseTimeToSec(str){
+  if(!str) return null;
+  str=str.toString().trim();
+  if(str.includes(":")){
+    const p=str.split(":");
+    return parseInt(p[0]||0)*60 + parseInt(p[1]||0);
+  }
+  const f=parseFloat(str);
+  return isNaN(f)?null:Math.round(f*60);
+}
+
+function formatSec(sec){
+  if(!sec||sec<=0) return "–";
+  const m=Math.floor(sec/60), s=sec%60;
+  return m+":"+(s<10?"0"+s:s);
+}
+
+function renderKondTotal(extraId){
+  const el=document.getElementById("kond-total-"+extraId);
+  if(!el) return;
+  const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
+  if(!ep) return;
+  let total=0, allSet=true;
+  ep.exercises.filter(e=>e.isKond).forEach(ex=>{
+    const sec=parseTimeToSec(ex.sets[0]?.tid);
+    if(sec) total+=sec; else allSet=false;
+  });
+  el.textContent = total>0 ? "Total: "+formatSec(total)+(allSet?"":" (ej komplett)") : "";
+}
+
+function addPassKonditionstest(){
+  addExtraPass("Konditionstest","Konditionstest",[
+    { progKey:"kond_run",   custom:true, isKond:true, name:"5km löpning (10% lutning)", sets:[{tid:""}] },
+    { progKey:"kond_rodd",  custom:true, isKond:true, name:"2km rodd",                  sets:[{tid:""}] },
+    { progKey:"kond_skierg",custom:true, isKond:true, name:"5km skierg",                sets:[{tid:""}] },
+  ], false);
+}
+
+function addPassRunning(){
+  addExtraPass("Löpning","Löpning",[
+    { progKey:"run_intervals", custom:true, isRunning:true, name:"Löpning", setsLabel:"", purpose:"", sets:[{km:"",tid:""}] },
+  ], true);
+}
+
+function deleteExtraPass(extraId){
+  const week=state.periods[activePeriod].weeks[activeWeek];
+  week.extraPasses=week.extraPasses.filter(p=>p.id!==extraId);
+  save(); render();
 }
 
 render();
