@@ -651,7 +651,7 @@ function buildExtraExBlock(extraId, exIdx, ex){
     const sa=document.createElement("div"); sa.className="sets-area";
     const row=document.createElement("div"); row.className="set-row";
     const lbl=document.createElement("span"); lbl.className="set-num"; lbl.style.width="auto"; lbl.style.marginRight="6px"; lbl.style.fontSize="12px"; lbl.style.color="var(--muted)"; lbl.textContent="Tid:"; row.appendChild(lbl);
-    const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="90px"; tidIn.type="text"; tidIn.inputMode="text";
+    const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="90px"; tidIn.type="text"; tidIn.inputMode="decimal";
     tidIn.placeholder="mm:ss"; tidIn.value=ex.sets[0]?.tid||"";
     tidIn.addEventListener("change",function(){
       const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
@@ -692,7 +692,7 @@ function buildExtraExBlock(extraId, exIdx, ex){
       }); row.appendChild(kmIn);
       const sep=document.createElement("span"); sep.className="set-sep"; sep.textContent="·"; row.appendChild(sep);
       // tid field (text so user can type e.g. "32:15")
-      const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="80px"; tidIn.type="text"; tidIn.inputMode="text";
+      const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="80px"; tidIn.type="text"; tidIn.inputMode="decimal";
       tidIn.placeholder="mm:ss"; tidIn.value=set.tid||"";
       tidIn.addEventListener("change",function(){
         const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
