@@ -626,7 +626,7 @@ function buildExBlock(passId,exIdx,ex){
 function buildSetRow(passId,exIdx,si,set){
   const row=document.createElement("div"); row.className="set-row";
   const num=document.createElement("span"); num.className="set-num"; num.textContent=si+1; row.appendChild(num);
-  const kgIn=document.createElement("input"); kgIn.className="set-input w"; kgIn.type="number"; kgIn.inputMode="decimal";
+  const kgIn=document.createElement("input"); kgIn.className="set-input w"; kgIn.type="text"; kgIn.inputMode="decimal";
   kgIn.placeholder="kg"; kgIn.value=set.kg||"";
   kgIn.addEventListener("change",function(){ state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises[exIdx].sets[si].kg=this.value; save(); });
   row.appendChild(kgIn);
@@ -651,7 +651,7 @@ function buildExtraExBlock(extraId, exIdx, ex){
     const sa=document.createElement("div"); sa.className="sets-area";
     const row=document.createElement("div"); row.className="set-row";
     const lbl=document.createElement("span"); lbl.className="set-num"; lbl.style.width="auto"; lbl.style.marginRight="6px"; lbl.style.fontSize="12px"; lbl.style.color="var(--muted)"; lbl.textContent="Tid:"; row.appendChild(lbl);
-    const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="90px"; tidIn.type="text"; tidIn.inputMode="numeric";
+    const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="90px"; tidIn.type="text"; tidIn.inputMode="text";
     tidIn.placeholder="mm:ss"; tidIn.value=ex.sets[0]?.tid||"";
     tidIn.addEventListener("change",function(){
       const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
@@ -684,7 +684,7 @@ function buildExtraExBlock(extraId, exIdx, ex){
 
     if(isRun){
       // km field
-      const kmIn=document.createElement("input"); kmIn.className="set-input w"; kmIn.type="number"; kmIn.inputMode="decimal";
+      const kmIn=document.createElement("input"); kmIn.className="set-input w"; kmIn.type="text"; kmIn.inputMode="decimal";
       kmIn.placeholder="km"; kmIn.value=set.km||"";
       kmIn.addEventListener("change",function(){
         const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
@@ -692,15 +692,15 @@ function buildExtraExBlock(extraId, exIdx, ex){
       }); row.appendChild(kmIn);
       const sep=document.createElement("span"); sep.className="set-sep"; sep.textContent="·"; row.appendChild(sep);
       // tid field (text so user can type e.g. "32:15")
-      const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="80px"; tidIn.type="text"; tidIn.inputMode="numeric";
-      tidIn.placeholder="tid"; tidIn.value=set.tid||"";
+      const tidIn=document.createElement("input"); tidIn.className="set-input"; tidIn.style.width="80px"; tidIn.type="text"; tidIn.inputMode="text";
+      tidIn.placeholder="mm:ss"; tidIn.value=set.tid||"";
       tidIn.addEventListener("change",function(){
         const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
         if(ep) ep.exercises[exIdx].sets[si].tid=this.value; save();
       }); row.appendChild(tidIn);
-      const unit=document.createElement("span"); unit.className="set-sep"; unit.style.fontSize="11px"; unit.textContent="min"; row.appendChild(unit);
+      const unit=document.createElement("span"); unit.className="set-sep"; unit.style.fontSize="11px"; unit.textContent="min:sek"; row.appendChild(unit);
     } else {
-      const kgIn=document.createElement("input"); kgIn.className="set-input w"; kgIn.type="number"; kgIn.inputMode="decimal";
+      const kgIn=document.createElement("input"); kgIn.className="set-input w"; kgIn.type="text"; kgIn.inputMode="decimal";
       kgIn.placeholder="kg"; kgIn.value=set.kg||"";
       kgIn.addEventListener("change",function(){
         const ep=state.periods[activePeriod].weeks[activeWeek].extraPasses.find(p=>p.id===extraId);
@@ -758,6 +758,7 @@ function addPeriod(){
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 // Epley 1RM: weight × (1 + reps/30)
+function parseKg(val){ if(!val) return 0; return parseFloat(val.toString().replace(",",".")) || 0; }
 function epley1RM(kg,reps){ if(!kg||!reps||reps<=0) return 0; if(reps===1) return kg; return Math.round(kg*(1+reps/30)); }
 
 // Extract best set per week: highest kg and best estimated 1RM
@@ -776,7 +777,7 @@ function getSeriesData(tracked){
       const ex=passData.exercises.find(e=>e.name===tracked.name&&!e.custom);
       if(!ex) return;
       let maxKg=0, best1RM=0;
-      ex.sets.forEach(s=>{ const kg=parseFloat(s.kg)||0, reps=parseFloat(s.reps)||0; if(kg>maxKg) maxKg=kg; const est=epley1RM(kg,reps); if(est>best1RM) best1RM=est; });
+      ex.sets.forEach(s=>{ const kg=parseKg(s.kg), reps=parseFloat(s.reps)||0; if(kg>maxKg) maxKg=kg; const est=epley1RM(kg,reps); if(est>best1RM) best1RM=est; });
       const passDate=getPassDate(week, tracked.passId);
       const lbl=passDate ? passDate.toLocaleDateString("sv-SE",{month:"short",day:"numeric"}) : "P"+period.id+"V"+week.week;
       if(maxKg>0) points.push({ label:lbl, kg:maxKg, est1rm:best1RM, gw:(period.id-1)*WEEKS+week.week });
@@ -864,7 +865,7 @@ function riegelPredict(km, minTotal, targetKm){
 // Parse time string "32:15" or "32.25" or "32" -> decimal minutes
 function parseTime(str){
   if(!str) return null;
-  str = str.toString().trim();
+  str = str.toString().trim().replace(",",":");
   if(str.includes(":")){
     const parts=str.split(":");
     return parseFloat(parts[0])+(parseFloat(parts[1]||0)/60);
@@ -895,7 +896,7 @@ function getRunningData(){
         ep.exercises.forEach(ex=>{
           if(!ex.isRunning) return;
           ex.sets.forEach(set=>{
-            const km=parseFloat(set.km)||0;
+            const km=parseKg(set.km);
             const mins=parseTime(set.tid);
             if(!km||!mins) return;
             const pace=mins/km;
@@ -1309,7 +1310,7 @@ function addPassCustom(){ addExtraPass("Eget pass","Extra pass",[], false); }
 // Parse "mm:ss" or "mm.ss" or decimal minutes -> total seconds
 function parseTimeToSec(str){
   if(!str) return null;
-  str=str.toString().trim();
+  str=str.toString().trim().replace(",",":");
   if(str.includes(":")){
     const p=str.split(":");
     return parseInt(p[0]||0)*60 + parseInt(p[1]||0);
