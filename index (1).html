@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Träning">
+<title>Träningsprogram</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #222; --surface3: #2a2a2a;
+  --border: #2c2c2c; --accent: #c8f135; --accent-dim: rgba(200,241,53,0.1);
+  --text: #f0f0f0; --muted: #777;
+  --done-bg: #0f1f00; --done-border: #3a6000; --done-text: #9cd400;
+  --deload-bg: #1a1400; --deload-border: #4a3800; --deload-text: #c8a000;
+  --red: #ff5f5f; --blue: #5b9cf6; --orange: #f6955b;
+}
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; min-height: 100vh; padding-bottom: 60px; }
+button { font-family: inherit; border: none; outline: none; background: none; cursor: pointer; }
+input, textarea { font-family: inherit; }
+
+/* Header */
+#header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 18px 16px 14px; position: sticky; top: 0; z-index: 100; }
+#header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+#header h1 span { color: var(--accent); }
+.prog-wrap { margin-top: 10px; background: var(--border); border-radius: 4px; height: 5px; overflow: hidden; }
+.prog-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s; width: 0%; }
+.prog-label { margin-top: 5px; font-size: 11px; color: var(--muted); }
+
+/* Nav tabs (bottom) */
+#nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 200; }
+.nav-btn { flex: 1; padding: 10px 0 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.3px; cursor: pointer; }
+.nav-btn.active { color: var(--accent); }
+.nav-icon { font-size: 20px; line-height: 1; }
+
+/* Page visibility */
+.page { display: none; }
+.page.visible { display: block; }
+
+/* Training tab-rows */
+.tab-row { display: flex; overflow-x: auto; gap: 6px; padding: 10px 16px; scrollbar-width: none; background: var(--bg); border-bottom: 1px solid var(--border); }
+.tab-row::-webkit-scrollbar { display: none; }
+.tab-btn { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.tab-btn.all-done { border-color: var(--done-border); background: var(--done-bg); color: var(--done-text); }
+.tab-btn.deload { border-color: var(--deload-border); background: var(--deload-bg); color: var(--deload-text); }
+.tab-btn.active.deload { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* Content */
+#trainContent { padding: 12px 16px; }
+.deload-banner { background: var(--deload-bg); border: 1px solid var(--deload-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--deload-text); line-height: 1.5; }
+
+/* Pass cards */
+.pass-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+.pass-card.done { background: var(--done-bg); border-color: var(--done-border); }
+.pass-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; cursor: pointer; user-select: none; }
+.pass-header-left { display: flex; align-items: center; gap: 8px; }
+.pass-badge { background: var(--accent-dim); color: var(--accent); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 7px; letter-spacing: 0.5px; text-transform: uppercase; }
+.pass-card.done .pass-badge { background: rgba(58,96,0,0.4); color: var(--done-text); }
+.pass-title { font-size: 15px; font-weight: 600; }
+.chevron { color: var(--muted); font-size: 18px; transition: transform 0.2s; display: inline-block; }
+.pass-card.open .chevron { transform: rotate(180deg); }
+.pass-body { display: none; padding: 0 16px 14px; }
+.pass-card.open .pass-body { display: block; }
+
+/* Section label */
+.sec-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+
+/* Exercise block */
+.ex-block { background: var(--surface2); border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+.ex-header { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; }
+.ex-header-left { flex: 1; }
+.ex-name { font-size: 14px; font-weight: 600; }
+.ex-name-input { background: transparent; border: none; color: var(--text); font-size: 14px; font-weight: 600; width: 100%; outline: none; border-bottom: 1px solid var(--border); padding-bottom: 2px; }
+.ex-sets-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.purpose-tag { display: inline-block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.ex-del-btn { color: var(--muted); font-size: 18px; padding: 4px 6px; line-height: 1; }
+
+/* Set rows */
+.sets-area { padding: 0 12px 10px; }
+.set-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.set-num { font-size: 11px; color: var(--muted); font-weight: 600; width: 20px; flex-shrink: 0; }
+.set-input { background: var(--surface3); border: 1px solid var(--border); color: var(--text); font-size: 14px; font-weight: 600; padding: 6px 8px; border-radius: 8px; text-align: center; -webkit-appearance: none; }
+.set-input:focus { outline: none; border-color: var(--accent); }
+.set-input.w { width: 72px; }
+.set-input.r { width: 58px; }
+.set-sep { font-size: 12px; color: var(--muted); }
+.set-del { color: var(--border); font-size: 16px; padding: 0 4px; line-height: 1; }
+.add-set-btn { display: flex; align-items: center; gap: 5px; color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 0; margin-top: 2px; }
+
+/* Add exercise */
+.add-ex-area { margin-top: 10px; }
+.add-ex-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; border-radius: 10px; border: 1px dashed var(--border); color: var(--muted); font-size: 13px; font-weight: 600; }
+
+/* Notes */
+.notes-label { font-size: 12px; color: var(--muted); display: block; margin: 12px 0 4px; }
+.notes-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; padding: 7px 10px; resize: none; height: 52px; font-family: inherit; }
+.notes-input:focus { outline: none; border-color: var(--accent); }
+
+/* Done button */
+.done-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 2px solid var(--border); background: transparent; color: var(--muted); font-size: 15px; font-weight: 700; cursor: pointer; }
+.pass-card.done .done-btn { border-color: var(--done-border); background: rgba(58,96,0,0.25); color: var(--done-text); }
+
+/* Reset */
+.reset-btn { border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 8px 20px; border-radius: 20px; display: block; margin: 20px auto 0; }
+
+/* ── Stats page ── */
+#statsPage { padding: 16px; }
+.stats-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.stats-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 16px; overflow: hidden; }
+.stat-card-header { padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+.stat-card-title { font-size: 15px; font-weight: 700; }
+.stat-card-pr { font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-dim); padding: 3px 9px; border-radius: 8px; }
+.chart-wrap { padding: 0 12px 14px; position: relative; }
+canvas { display: block; width: 100% !important; }
+.no-data { text-align: center; padding: 30px 16px; font-size: 13px; color: var(--muted); }
+.stats-kpi-row { display: flex; gap: 8px; padding: 0 16px 14px; }
+.kpi-box { flex: 1; background: var(--surface2); border-radius: 10px; padding: 10px 12px; }
+.kpi-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.kpi-val { font-size: 20px; font-weight: 700; }
+.kpi-unit { font-size: 11px; color: var(--muted); font-weight: 500; }
+.kpi-delta { font-size: 11px; margin-top: 2px; }
+.kpi-delta.pos { color: var(--done-text); }
+.kpi-delta.neg { color: var(--red); }
+.kpi-delta.neu { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Träning <span>— löpande program</span></h1>
+  <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
+  <div class="prog-label" id="progLabel"></div>
+</div>
+
+<!-- Training page -->
+<div id="trainPage" class="page visible">
+  <div class="tab-row" id="periodTabs"></div>
+  <div class="tab-row" id="weekTabs"></div>
+  <div id="trainContent"></div>
+</div>
+
+<!-- Stats page -->
+<div id="statsPage" class="page">
+  <div class="stats-title">Statistik</div>
+  <div class="stats-sub">Bästa set per vecka (högst vikt)</div>
+  <div id="statsContent"></div>
+</div>
+
+<!-- Bottom nav -->
+<div id="nav">
+  <button class="nav-btn active" id="navTrain" onclick="switchPage('train')">
+    <span class="nav-icon">🏋️</span>Träning
+  </button>
+  <button class="nav-btn" id="navStats" onclick="switchPage('stats')">
+    <span class="nav-icon">📈</span>Statistik
+  </button>
+</div>
+
+<script>
+// ── Program ───────────────────────────────────────────────────────────────────
+const PROGRAM = [
+  { id:"A", label:"Pass A", title:"Underkropp", sections:[
+    { name:"Baslyftar", exercises:[
+      { name:"Knäböj",               sets:4, repsLabel:"6–8"      },
+      { name:"Rumänsk marklyft",     sets:3, repsLabel:"8–10"     },
+      { name:"Benpress",             sets:3, repsLabel:"10–12"    },
+      { name:"Leg curl",             sets:3, repsLabel:"10–12"    },
+      { name:"Stående vadpress",     sets:3, repsLabel:"12–15"    },
+    ]},
+    { name:"Löptillägg", exercises:[
+      { name:"Bulgarian split squat",sets:3, repsLabel:"10–12/ben", purpose:"Ensidig benstyrka + höftstabilitet" },
+      { name:"Nordic hamstring curl",sets:3, repsLabel:"6–8",       purpose:"Excentrisk hamstringsstyrka" },
+    ]},
+  ]},
+  { id:"B", label:"Pass B", title:"Överkropp", sections:[
+    { name:"Baslyftar", exercises:[
+      { name:"Bänkpress",            sets:4, repsLabel:"6–8"      },
+      { name:"Skivstångsrodd",       sets:4, repsLabel:"8–10"     },
+      { name:"Militärpress",         sets:3, repsLabel:"8–10"     },
+      { name:"Latsdrag / chins",     sets:3, repsLabel:"8–12"     },
+      { name:"Triceps pushdown",     sets:3, repsLabel:"12–15"    },
+      { name:"Hammer curls",         sets:3, repsLabel:"12–15"    },
+    ]},
+    { name:"Löptillägg", exercises:[
+      { name:"Plankan m. axelknackning", sets:3, repsLabel:"10/sida", purpose:"Rotatorisstabilitet i core" },
+      { name:"Dead bug",             sets:3, repsLabel:"8–10/sida", purpose:"Core-kontroll" },
+    ]},
+  ]},
+  { id:"C", label:"Pass C", title:"Helkropp / Styrka", sections:[
+    { name:"Baslyftar", exercises:[
+      { name:"Marklyft",             sets:4, repsLabel:"4–6"      },
+      { name:"Frontböj",             sets:3, repsLabel:"8"        },
+      { name:"Incline bänkpress",    sets:3, repsLabel:"8–10"     },
+      { name:"Hantelrodd",           sets:3, repsLabel:"10"       },
+      { name:"Face pulls",           sets:3, repsLabel:"15"       },
+    ]},
+    { name:"Löptillägg", exercises:[
+      { name:"Hip thrust",           sets:3, repsLabel:"10–12",    purpose:"Gluteuskraft = bättre framdrivning" },
+      { name:"Tibialis raises",      sets:3, repsLabel:"15–20",    purpose:"Förebygger shin splints" },
+    ]},
+  ]},
+];
+
+// Which exercises to track in stats: [passId, exName, color]
+const TRACKED = [
+  { passId:"A", name:"Knäböj",    color:"#c8f135", label:"Knäböj"   },
+  { passId:"C", name:"Marklyft",  color:"#5b9cf6", label:"Marklyft" },
+  { passId:"B", name:"Bänkpress", color:"#f6955b", label:"Bänkpress"},
+];
+
+const WEEKS=7, DELOAD_EVERY=7, KEY="styrkelyft_v4";
+function isDeload(gw){ return gw%DELOAD_EVERY===0; }
+
+function emptyPassData(passId, prevPassData){
+  const pass=PROGRAM.find(p=>p.id===passId);
+  const exercises=[];
+  pass.sections.forEach((sec,si)=>{
+    sec.exercises.forEach((ex,ei)=>{
+      const prevEx=prevPassData?prevPassData.exercises.find(e=>e.progKey===si+"_"+ei):null;
+      const prevKg=prevEx?(prevEx.sets[prevEx.sets.length-1]?.kg||""):"";
+      exercises.push({
+        progKey:si+"_"+ei, custom:false, name:ex.name,
+        setsLabel:ex.sets+"× "+ex.repsLabel, purpose:ex.purpose||"",
+        sets:Array.from({length:ex.sets},()=>({kg:prevKg,reps:""}))
+      });
+    });
+  });
+  if(prevPassData){
+    prevPassData.exercises.filter(e=>e.custom).forEach(ce=>{
+      exercises.push({...ce, sets:ce.sets.map(s=>({kg:s.kg,reps:""}))});
+    });
+  }
+  return {done:false, notes:"", exercises};
+}
+
+function emptyPeriod(pid,prev){
+  return Array.from({length:WEEKS},(_,i)=>{
+    const w=i+1, gw=(pid-1)*WEEKS+w;
+    const passes={};
+    PROGRAM.forEach(p=>{
+      const prevPD=prev?prev.weeks[WEEKS-1].passes[p.id]:null;
+      passes[p.id]=emptyPassData(p.id,prevPD);
+    });
+    return {week:w,gw,deload:isDeload(gw),passes};
+  });
+}
+
+function load(){
+  try{ const r=localStorage.getItem(KEY); if(r) return JSON.parse(r); }catch{}
+  return {periods:[{id:1,weeks:emptyPeriod(1,null)}]};
+}
+
+let state=load();
+let activePeriod=0, activeWeek=0, openPass=null, activePage="train";
+
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch{} }
+
+// ── Page switching ────────────────────────────────────────────────────────────
+function switchPage(page){
+  activePage=page;
+  document.getElementById("trainPage").classList.toggle("visible", page==="train");
+  document.getElementById("statsPage").classList.toggle("visible", page==="stats");
+  document.getElementById("navTrain").classList.toggle("active", page==="train");
+  document.getElementById("navStats").classList.toggle("active", page==="stats");
+  if(page==="stats") renderStats();
+}
+
+// ── Render training ───────────────────────────────────────────────────────────
+function render(){
+  renderPeriodTabs();
+  renderWeekTabs();
+  renderTrainContent();
+  renderProgress();
+}
+
+function renderProgress(){
+  let total=0,done=0;
+  state.periods.forEach(p=>p.weeks.forEach(w=>{
+    PROGRAM.forEach(pass=>{ total++; if(w.passes[pass.id].done) done++; });
+  }));
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById("progFill").style.width=pct+"%";
+  document.getElementById("progLabel").textContent=done+" av "+total+" pass genomförda · "+pct+"%";
+}
+
+function renderPeriodTabs(){
+  const el=document.getElementById("periodTabs"); el.innerHTML="";
+  state.periods.forEach((p,i)=>{
+    const b=document.createElement("button");
+    b.className="tab-btn"+(i===activePeriod?" active":"");
+    b.textContent="Period "+p.id;
+    b.onclick=()=>{ activePeriod=i; activeWeek=0; openPass=null; render(); };
+    el.appendChild(b);
+  });
+  const add=document.createElement("button");
+  add.className="tab-btn"; add.textContent="+ Ny period";
+  add.onclick=addPeriod; el.appendChild(add);
+}
+
+function renderWeekTabs(){
+  const el=document.getElementById("weekTabs"); el.innerHTML="";
+  state.periods[activePeriod].weeks.forEach((w,i)=>{
+    const allDone=PROGRAM.every(p=>w.passes[p.id].done);
+    const b=document.createElement("button");
+    let cls="tab-btn";
+    if(i===activeWeek) cls+=" active";
+    else if(w.deload) cls+=" deload";
+    else if(allDone) cls+=" all-done";
+    if(i===activeWeek&&w.deload) cls+=" deload";
+    b.className=cls;
+    b.textContent=w.deload?"V"+w.week+" ⚡":"V"+w.week;
+    b.onclick=()=>{ activeWeek=i; openPass=null; render(); };
+    el.appendChild(b);
+  });
+}
+
+function renderTrainContent(){
+  const el=document.getElementById("trainContent"); el.innerHTML="";
+  const week=state.periods[activePeriod].weeks[activeWeek];
+
+  if(week.deload){
+    const d=document.createElement("div");
+    d.className="deload-banner";
+    d.innerHTML="⚡ <strong>Deload-vecka (v"+week.gw+")</strong> — kör samma övningar på 50–60% av din normala vikt. Fokus på teknik och återhämtning.";
+    el.appendChild(d);
+  }
+
+  PROGRAM.forEach(pass=>{
+    const pd=week.passes[pass.id];
+    const isDone=pd.done, isOpen=openPass===pass.id;
+    const card=document.createElement("div");
+    card.className="pass-card"+(isDone?" done":"")+(isOpen?" open":"");
+
+    const hdr=document.createElement("div");
+    hdr.className="pass-header";
+    hdr.innerHTML=`<div class="pass-header-left"><span class="pass-badge">${pass.label}</span><span class="pass-title">${pass.title}</span></div><span class="chevron">⌄</span>`;
+    hdr.onclick=()=>{ openPass=isOpen?null:pass.id; render(); };
+    card.appendChild(hdr);
+
+    if(isOpen){
+      const body=document.createElement("div");
+      body.className="pass-body";
+
+      pass.sections.forEach((sec,si)=>{
+        const sl=document.createElement("div");
+        sl.className="sec-label"; sl.textContent=sec.name;
+        body.appendChild(sl);
+        sec.exercises.forEach((_,ei)=>{
+          const progKey=si+"_"+ei;
+          const exIdx=pd.exercises.findIndex(e=>e.progKey===progKey&&!e.custom);
+          if(exIdx===-1) return;
+          body.appendChild(buildExBlock(pass.id,exIdx,pd.exercises[exIdx]));
+        });
+      });
+
+      const customs=pd.exercises.filter(e=>e.custom);
+      if(customs.length>0){
+        const cl=document.createElement("div");
+        cl.className="sec-label"; cl.textContent="Egna övningar";
+        body.appendChild(cl);
+        pd.exercises.forEach((ex,exIdx)=>{ if(!ex.custom) return; body.appendChild(buildExBlock(pass.id,exIdx,ex)); });
+      }
+
+      const addArea=document.createElement("div"); addArea.className="add-ex-area";
+      const addBtn=document.createElement("button"); addBtn.className="add-ex-btn";
+      addBtn.innerHTML="＋ Lägg till egen övning";
+      addBtn.onclick=()=>addCustomExercise(pass.id);
+      addArea.appendChild(addBtn); body.appendChild(addArea);
+
+      const nl=document.createElement("label"); nl.className="notes-label"; nl.textContent="Anteckningar";
+      body.appendChild(nl);
+      const ta=document.createElement("textarea"); ta.className="notes-input"; ta.placeholder="Hur gick passet?";
+      ta.value=pd.notes||"";
+      ta.addEventListener("change",function(){ state.periods[activePeriod].weeks[activeWeek].passes[pass.id].notes=this.value; save(); });
+      body.appendChild(ta);
+
+      const db=document.createElement("button"); db.className="done-btn";
+      db.innerHTML=(isDone?"✓ Pass genomfört":"○ Markera som genomfört");
+      db.onclick=()=>{ state.periods[activePeriod].weeks[activeWeek].passes[pass.id].done=!isDone; save(); render(); };
+      body.appendChild(db);
+
+      card.appendChild(body);
+    }
+    el.appendChild(card);
+  });
+
+  const rb=document.createElement("button"); rb.className="reset-btn"; rb.textContent="↺ Återställ allt";
+  rb.onclick=()=>{
+    if(!confirm("Återställa allt? All data raderas permanent.")) return;
+    state={periods:[{id:1,weeks:emptyPeriod(1,null)}]};
+    activePeriod=0; activeWeek=0; openPass=null; save(); render();
+  };
+  el.appendChild(rb);
+}
+
+function buildExBlock(passId,exIdx,ex){
+  const block=document.createElement("div"); block.className="ex-block";
+  const hdr=document.createElement("div"); hdr.className="ex-header";
+  const left=document.createElement("div"); left.className="ex-header-left";
+
+  if(ex.custom){
+    const ni=document.createElement("input"); ni.className="ex-name-input"; ni.type="text";
+    ni.placeholder="Övningsnamn"; ni.value=ex.name;
+    ni.addEventListener("change",function(){ state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises[exIdx].name=this.value; save(); });
+    left.appendChild(ni);
+  } else {
+    const nn=document.createElement("div"); nn.className="ex-name"; nn.textContent=ex.name; left.appendChild(nn);
+    const sl=document.createElement("div"); sl.className="ex-sets-lbl"; sl.textContent=ex.setsLabel; left.appendChild(sl);
+    if(ex.purpose){ const pt=document.createElement("div"); pt.className="purpose-tag"; pt.textContent="📍 "+ex.purpose; left.appendChild(pt); }
+  }
+  hdr.appendChild(left);
+
+  if(ex.custom){
+    const del=document.createElement("button"); del.className="ex-del-btn"; del.textContent="✕";
+    del.onclick=()=>deleteExercise(passId,exIdx); hdr.appendChild(del);
+  }
+  block.appendChild(hdr);
+
+  const sa=document.createElement("div"); sa.className="sets-area";
+  ex.sets.forEach((set,si)=>sa.appendChild(buildSetRow(passId,exIdx,si,set)));
+  const asb=document.createElement("button"); asb.className="add-set-btn"; asb.innerHTML="＋ Set";
+  asb.onclick=()=>addSet(passId,exIdx); sa.appendChild(asb);
+  block.appendChild(sa);
+  return block;
+}
+
+function buildSetRow(passId,exIdx,si,set){
+  const row=document.createElement("div"); row.className="set-row";
+  const num=document.createElement("span"); num.className="set-num"; num.textContent=si+1; row.appendChild(num);
+  const kgIn=document.createElement("input"); kgIn.className="set-input w"; kgIn.type="number"; kgIn.inputMode="decimal";
+  kgIn.placeholder="kg"; kgIn.value=set.kg||"";
+  kgIn.addEventListener("change",function(){ state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises[exIdx].sets[si].kg=this.value; save(); });
+  row.appendChild(kgIn);
+  const sep=document.createElement("span"); sep.className="set-sep"; sep.textContent="×"; row.appendChild(sep);
+  const repIn=document.createElement("input"); repIn.className="set-input r"; repIn.type="number"; repIn.inputMode="numeric";
+  repIn.placeholder="reps"; repIn.value=set.reps||"";
+  repIn.addEventListener("change",function(){ state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises[exIdx].sets[si].reps=this.value; save(); });
+  row.appendChild(repIn);
+  const delBtn=document.createElement("button"); delBtn.className="set-del"; delBtn.textContent="✕";
+  delBtn.onclick=()=>deleteSet(passId,exIdx,si); row.appendChild(delBtn);
+  return row;
+}
+
+function addSet(passId,exIdx){
+  const ex=state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises[exIdx];
+  const lastKg=ex.sets.length>0?ex.sets[ex.sets.length-1].kg:"";
+  ex.sets.push({kg:lastKg,reps:""}); save(); render();
+}
+function deleteSet(passId,exIdx,si){
+  const sets=state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises[exIdx].sets;
+  if(sets.length<=1) return; sets.splice(si,1); save(); render();
+}
+function addCustomExercise(passId){
+  state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises.push({
+    progKey:"custom_"+Date.now(), custom:true, name:"", setsLabel:"", purpose:"",
+    sets:[{kg:"",reps:""}]
+  }); save(); render();
+}
+function deleteExercise(passId,exIdx){
+  state.periods[activePeriod].weeks[activeWeek].passes[passId].exercises.splice(exIdx,1); save(); render();
+}
+function addPeriod(){
+  const prev=state.periods[state.periods.length-1];
+  state.periods.push({id:prev.id+1, weeks:emptyPeriod(prev.id+1,prev)});
+  activePeriod=state.periods.length-1; activeWeek=0; openPass=null; save(); render();
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+// Epley 1RM: weight × (1 + reps/30)
+function epley1RM(kg,reps){ if(!kg||!reps||reps<=0) return 0; if(reps===1) return kg; return Math.round(kg*(1+reps/30)); }
+
+// Extract best set per week: highest kg and best estimated 1RM
+function getSeriesData(tracked){
+  const points=[];
+  state.periods.forEach(period=>{
+    period.weeks.forEach(week=>{
+      if(week.deload) return; // skip deload weeks
+      const passData=week.passes[tracked.passId];
+      if(!passData) return;
+      const ex=passData.exercises.find(e=>e.name===tracked.name&&!e.custom);
+      if(!ex) return;
+      let maxKg=0, best1RM=0;
+      ex.sets.forEach(s=>{ const kg=parseFloat(s.kg)||0, reps=parseFloat(s.reps)||0; if(kg>maxKg) maxKg=kg; const est=epley1RM(kg,reps); if(est>best1RM) best1RM=est; });
+      if(maxKg>0) points.push({ label:"P"+period.id+"V"+week.week, kg:maxKg, est1rm:best1RM, gw:(period.id-1)*WEEKS+week.week });
+    });
+  });
+  return points;
+}
+
+function renderStats(){
+  const el=document.getElementById("statsContent"); el.innerHTML="";
+
+  TRACKED.forEach(tracked=>{
+    const data=getSeriesData(tracked);
+
+    const card=document.createElement("div"); card.className="stat-card";
+
+    // Card header
+    const hdr=document.createElement("div"); hdr.className="stat-card-header";
+    const title=document.createElement("div"); title.className="stat-card-title"; title.textContent=tracked.label;
+    hdr.appendChild(title);
+    if(data.length>0){
+      const pr=document.createElement("div"); pr.className="stat-card-pr";
+      const maxKg=Math.max(...data.map(d=>d.kg));
+      pr.textContent="PR: "+maxKg+" kg"; hdr.appendChild(pr);
+    }
+    card.appendChild(hdr);
+
+    if(data.length===0){
+      const nd=document.createElement("div"); nd.className="no-data";
+      nd.textContent="Ingen data loggad ännu"; card.appendChild(nd);
+      el.appendChild(card); return;
+    }
+
+    // KPI row — 4 boxes including estimated 1RM
+    const kpiRow=document.createElement("div"); kpiRow.className="stats-kpi-row";
+    const firstKg=data[0].kg, lastKg=data[data.length-1].kg;
+    const maxKg=Math.max(...data.map(d=>d.kg));
+    const delta=lastKg-firstKg;
+    const best1RM=Math.max(...data.map(d=>d.est1rm||0));
+
+    [
+      {label:"Senaste",val:lastKg,unit:"kg",delta:null,sub:null},
+      {label:"PR (lyft)",val:maxKg,unit:"kg",delta:null,sub:null},
+      {label:"Est. 1RM",val:best1RM>0?best1RM:"–",unit:best1RM>0?"kg":"",delta:null,sub:"Epley"},
+      {label:"Förändring",val:(delta>=0?"+":"")+delta,unit:"kg",delta,sub:null},
+    ].forEach(kpi=>{
+      const box=document.createElement("div"); box.className="kpi-box";
+      box.innerHTML=`<div class="kpi-label">${kpi.label}</div><div class="kpi-val">${kpi.val}${kpi.unit?" ":""}<span class="kpi-unit">${kpi.unit}</span></div>`;
+      if(kpi.sub){ const s=document.createElement("div"); s.className="kpi-delta neu"; s.textContent=kpi.sub; box.appendChild(s); }
+      if(kpi.delta!==null){
+        const dEl=document.createElement("div");
+        dEl.className="kpi-delta "+(kpi.delta>0?"pos":kpi.delta<0?"neg":"neu");
+        dEl.textContent=kpi.delta>0?"▲ Ökning":kpi.delta<0?"▼ Minskning":"— Oförändrat";
+        box.appendChild(dEl);
+      }
+      kpiRow.appendChild(box);
+    });
+    card.appendChild(kpiRow);
+
+    // Chart
+    const wrap=document.createElement("div"); wrap.className="chart-wrap";
+    const canvas=document.createElement("canvas");
+    canvas.height=160;
+    wrap.appendChild(canvas); card.appendChild(wrap);
+    el.appendChild(card);
+
+    // Draw chart after DOM insertion
+    setTimeout(()=>drawChart(canvas,data,tracked.color),0);
+  });
+}
+
+function drawChart(canvas, data, color){
+  const dpr=window.devicePixelRatio||1;
+  const w=canvas.parentElement.clientWidth-24;
+  const h=160;
+  canvas.width=w*dpr; canvas.height=h*dpr;
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  const ctx=canvas.getContext("2d");
+  ctx.scale(dpr,dpr);
+
+  const pad={t:16,r:16,b:32,l:40};
+  const cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
+
+  const vals=data.map(d=>d.kg);
+  const minV=Math.max(0,Math.min(...vals)-10);
+  const maxV=Math.max(...vals)+10;
+
+  const xScale=i=>(i/(data.length-1||1))*cw+pad.l;
+  const yScale=v=>pad.t+ch-(v-minV)/(maxV-minV)*ch;
+
+  // Grid lines
+  ctx.strokeStyle="#2c2c2c"; ctx.lineWidth=1;
+  const steps=4;
+  for(let i=0;i<=steps;i++){
+    const v=minV+(maxV-minV)*i/steps;
+    const y=yScale(v);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke();
+    ctx.fillStyle="#777"; ctx.font="10px -apple-system,sans-serif";
+    ctx.textAlign="right"; ctx.fillText(Math.round(v),pad.l-6,y+3);
+  }
+
+  // X labels (show every other if many points)
+  ctx.fillStyle="#777"; ctx.font="10px -apple-system,sans-serif"; ctx.textAlign="center";
+  data.forEach((d,i)=>{
+    if(data.length>8 && i%2!==0) return;
+    ctx.fillText(d.label, xScale(i), h-pad.b+14);
+  });
+
+  // Area fill
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+  grad.addColorStop(0,color+"55"); grad.addColorStop(1,color+"00");
+  ctx.beginPath();
+  data.forEach((d,i)=>{ const x=xScale(i),y=yScale(d.kg); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.lineTo(xScale(data.length-1),pad.t+ch);
+  ctx.lineTo(xScale(0),pad.t+ch);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.lineJoin="round";
+  data.forEach((d,i)=>{ const x=xScale(i),y=yScale(d.kg); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.stroke();
+
+  // Dots
+  data.forEach((d,i)=>{
+    const x=xScale(i), y=yScale(d.kg);
+    const isPR=d.kg===Math.max(...vals);
+    ctx.beginPath(); ctx.arc(x,y,isPR?5:3.5,0,Math.PI*2);
+    ctx.fillStyle=isPR?"#fff":color; ctx.fill();
+    if(isPR){
+      ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+      ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+    }
+    if(isPR||data.length<=6){
+      ctx.fillStyle="#fff"; ctx.font="bold 10px -apple-system,sans-serif"; ctx.textAlign="center";
+      ctx.fillText(d.kg+"kg", x, y-9);
+    }
+  });
+}
+
+render();
+</script>
+</body>
+</html>
